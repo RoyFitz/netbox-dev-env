@@ -1,0 +1,26 @@
+# Ignore imported data (user-specific)
+# Remove this line if you want to version control your data files
+# data/*.yml
+# data/*.yaml
+# data/*.json
+
+# Keep example file
+!data/example.yml
+
+# Environment overrides
+env/*.local
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
