@@ -116,3 +116,4 @@ See `expected_deliverables.md` for the evaluation checklist.
 ## Resources
 
 - [How to Generate Device Configurations with NetBox](https://netboxlabs.com/blog/how-to-generate-device-configurations-with-netbox/) - NetBox Labs guide on config templates
+- `example_output.txt` - Sample output to work towards

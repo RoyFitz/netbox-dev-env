@@ -1,0 +1,76 @@
+!
+! NetBox Generated Configuration
+! Device: FSW-01
+! Site:   TST1 - Test Site
+!
+hostname FSW-01
+!
+! Management IP
+!
+ip address 10.1.1.1 255.255.255.255
+!
+! VLANs
+!
+vlan 40
+ name pv-pcs
+vlan 50
+ name tracker
+vlan 60
+ name met-station
+vlan 90
+ name pv-field-mgmt
+vlan 101
+ name mrp-ckt-a
+!
+! Interfaces
+!
+interface 1/1
+ description NO DESCRIPTION
+ switchport mode trunk
+ switchport trunk allowed vlan 40,50,60,90,101
+!
+interface 1/2
+ description NO DESCRIPTION
+ switchport mode trunk
+ switchport trunk allowed vlan 40,50,60,90,101
+!
+interface 1/3
+ description NO DESCRIPTION
+ switchport mode access
+ switchport access vlan 40
+!
+interface 1/4
+ description NO DESCRIPTION
+ switchport mode access
+ switchport access vlan 60
+!
+interface 1/5
+ description NO DESCRIPTION
+ switchport mode access
+ switchport access vlan 50
+!
+interface 1/6
+ description NO DESCRIPTION
+ switchport mode access
+ switchport access vlan 50
+!
+interface 1/7
+ description NO DESCRIPTION
+ switchport mode access
+ switchport access vlan 50
+!
+interface 1/8
+ description NO DESCRIPTION
+ switchport mode access
+ switchport access vlan 50
+!
+interface 1/9
+ description NO DESCRIPTION
+ ! No VLAN assigned
+!
+interface 1/10
+ description NO DESCRIPTION
+ switchport mode access
+ switchport access vlan 90
+!
+! End of configuration
