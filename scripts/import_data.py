@@ -91,6 +91,10 @@ ENDPOINT_MAP = {
     'custom_fields': '/api/extras/custom-fields/',
     'custom_links': '/api/extras/custom-links/',
     'webhooks': '/api/extras/webhooks/',
+
+    # Special update operations
+    'interface_updates': '/api/dcim/interfaces/',
+    'device_updates': '/api/dcim/devices/',
 }
 
 # Nested components that need to be extracted and created separately
@@ -252,6 +256,202 @@ class NetBoxImporter:
             except Exception as e:
                 print(f"      ✗ {component.get('name', '?')}: {e}")
 
+    def update_interfaces(self, interface_configs: list[dict]) -> dict:
+        """Update existing device interfaces with VLAN assignments."""
+        results = {'updated': 0, 'failed': 0, 'errors': []}
+
+        for config in interface_configs:
+            device_ref = config.get('device', {})
+            device_name = device_ref.get('name')
+            iface_name = config.get('name')
+
+            if not device_name or not iface_name:
+                print(f"  ✗ Missing device or interface name")
+                results['failed'] += 1
+                continue
+
+            # Look up the interface
+            iface_id = self._find_interface(device_name, iface_name)
+            if not iface_id:
+                print(f"  ✗ Interface not found: {device_name} / {iface_name}")
+                results['failed'] += 1
+                continue
+
+            # Build the update payload
+            payload = {}
+
+            if 'mode' in config:
+                payload['mode'] = config['mode']
+
+            # Resolve tagged VLANs to IDs
+            if 'tagged_vlans' in config:
+                vlan_ids = []
+                for vlan_ref in config['tagged_vlans']:
+                    vlan_id = self._find_vlan(vlan_ref.get('vid'))
+                    if vlan_id:
+                        vlan_ids.append(vlan_id)
+                payload['tagged_vlans'] = vlan_ids
+
+            # Resolve untagged VLAN to ID
+            if 'untagged_vlan' in config:
+                vlan_id = self._find_vlan(config['untagged_vlan'].get('vid'))
+                if vlan_id:
+                    payload['untagged_vlan'] = vlan_id
+
+            # PATCH the interface
+            try:
+                url = f"{self.base_url}/api/dcim/interfaces/{iface_id}/"
+                response = self.session.patch(url, json=payload)
+
+                if response.status_code == 200:
+                    results['updated'] += 1
+                    print(f"  ✓ Updated: {device_name} / {iface_name}")
+                else:
+                    results['failed'] += 1
+                    error = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+                    results['errors'].append({'interface': f"{device_name}/{iface_name}", 'error': error})
+                    print(f"  ✗ Failed: {device_name} / {iface_name} - {error}")
+            except Exception as e:
+                results['failed'] += 1
+                print(f"  ✗ Error: {device_name} / {iface_name} - {e}")
+
+        return results
+
+    def _find_interface(self, device_name: str, iface_name: str) -> int | None:
+        """Find interface ID by device name and interface name."""
+        url = f"{self.base_url}/api/dcim/interfaces/"
+        try:
+            response = self.session.get(url, params={'device': device_name, 'name': iface_name})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('count', 0) > 0:
+                    return data['results'][0]['id']
+        except Exception:
+            pass
+        return None
+
+    def _find_vlan(self, vid: int) -> int | None:
+        """Find VLAN ID by VID."""
+        url = f"{self.base_url}/api/ipam/vlans/"
+        try:
+            response = self.session.get(url, params={'vid': vid})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('count', 0) > 0:
+                    return data['results'][0]['id']
+        except Exception:
+            pass
+        return None
+
+    def _find_device(self, name: str) -> int | None:
+        """Find device ID by name."""
+        url = f"{self.base_url}/api/dcim/devices/"
+        try:
+            response = self.session.get(url, params={'name': name})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('count', 0) > 0:
+                    return data['results'][0]['id']
+        except Exception:
+            pass
+        return None
+
+    def _find_ip_address(self, address: str) -> int | None:
+        """Find IP address ID by address."""
+        url = f"{self.base_url}/api/ipam/ip-addresses/"
+        try:
+            response = self.session.get(url, params={'address': address})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('count', 0) > 0:
+                    return data['results'][0]['id']
+        except Exception:
+            pass
+        return None
+
+    def preprocess_ip_addresses(self, ip_list: list[dict]) -> list[dict]:
+        """Resolve interface references in IP address objects."""
+        processed = []
+        for ip in ip_list:
+            ip_copy = ip.copy()
+
+            # Handle assigned_object reference
+            if 'assigned_object' in ip_copy and 'assigned_object_type' in ip_copy:
+                obj_type = ip_copy.pop('assigned_object_type')
+                obj_ref = ip_copy.pop('assigned_object')
+
+                if obj_type == 'dcim.interface':
+                    device_name = obj_ref.get('device', {}).get('name')
+                    iface_name = obj_ref.get('name')
+                    if device_name and iface_name:
+                        iface_id = self._find_interface(device_name, iface_name)
+                        if iface_id:
+                            ip_copy['assigned_object_type'] = 'dcim.interface'
+                            ip_copy['assigned_object_id'] = iface_id
+                        else:
+                            print(f"  ⚠ Interface not found: {device_name}/{iface_name}")
+
+            processed.append(ip_copy)
+        return processed
+
+    def update_devices(self, device_configs: list[dict]) -> dict:
+        """Update existing devices (e.g., set primary IP)."""
+        results = {'updated': 0, 'failed': 0, 'errors': []}
+
+        for config in device_configs:
+            device_name = config.get('name')
+            if not device_name:
+                print(f"  ✗ Missing device name")
+                results['failed'] += 1
+                continue
+
+            device_id = self._find_device(device_name)
+            if not device_id:
+                print(f"  ✗ Device not found: {device_name}")
+                results['failed'] += 1
+                continue
+
+            payload = {}
+
+            # Handle primary_ip4 reference
+            if 'primary_ip4' in config:
+                ip_ref = config['primary_ip4']
+                if isinstance(ip_ref, dict) and 'address' in ip_ref:
+                    ip_id = self._find_ip_address(ip_ref['address'])
+                    if ip_id:
+                        payload['primary_ip4'] = ip_id
+                    else:
+                        print(f"  ⚠ IP not found: {ip_ref['address']}")
+
+            # Handle primary_ip6 reference
+            if 'primary_ip6' in config:
+                ip_ref = config['primary_ip6']
+                if isinstance(ip_ref, dict) and 'address' in ip_ref:
+                    ip_id = self._find_ip_address(ip_ref['address'])
+                    if ip_id:
+                        payload['primary_ip6'] = ip_id
+
+            if not payload:
+                print(f"  - Skipped (nothing to update): {device_name}")
+                continue
+
+            try:
+                url = f"{self.base_url}/api/dcim/devices/{device_id}/"
+                response = self.session.patch(url, json=payload)
+
+                if response.status_code == 200:
+                    results['updated'] += 1
+                    print(f"  ✓ Updated: {device_name}")
+                else:
+                    results['failed'] += 1
+                    error = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+                    print(f"  ✗ Failed: {device_name} - {error}")
+            except Exception as e:
+                results['failed'] += 1
+                print(f"  ✗ Error: {device_name} - {e}")
+
+        return results
+
     def wait_for_netbox(self, timeout: int = 120) -> bool:
         """Wait for NetBox API to become available."""
         import time
@@ -340,6 +540,26 @@ def main():
 
             if not objects:
                 continue
+
+            # Handle interface updates specially (PATCH instead of POST)
+            if object_type == 'interface_updates':
+                print(f"\n► Updating {len(objects)} interfaces...")
+                results = importer.update_interfaces(objects)
+                total_created += results['updated']
+                total_failed += results['failed']
+                continue
+
+            # Handle device updates specially (PATCH instead of POST)
+            if object_type == 'device_updates':
+                print(f"\n► Updating {len(objects)} devices...")
+                results = importer.update_devices(objects)
+                total_created += results['updated']
+                total_failed += results['failed']
+                continue
+
+            # Preprocess IP addresses to resolve interface references
+            if object_type == 'ip_addresses':
+                objects = importer.preprocess_ip_addresses(objects)
 
             endpoint = ENDPOINT_MAP[object_type]
             print(f"\n► Importing {len(objects)} {object_type}...")

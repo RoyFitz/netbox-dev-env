@@ -196,6 +196,11 @@ prefixes:
 ip_addresses:
   - address: 10.1.1.1/32
     status: active
+    assigned_object_type: dcim.interface
+    assigned_object:
+      device:
+        name: FSW-01
+      name: Management
 
 # VLANs
 vlan_groups:
@@ -225,5 +230,85 @@ vlans:
     status: active
     group:
       slug: tst1-vlans
+  - vid: 101
+    name: mrp-ckt-a
+    status: active
+    group:
+      slug: tst1-vlans
 
+# Interface VLAN assignments (updates existing device interfaces)
+interface_updates:
+  - device:
+      name: FSW-01
+    name: "1/1"
+    mode: tagged
+    tagged_vlans:
+      - vid: 40
+      - vid: 50
+      - vid: 60
+      - vid: 90
+      - vid: 101
+  - device:
+      name: FSW-01
+    name: "1/2"
+    mode: tagged
+    tagged_vlans:
+      - vid: 40
+      - vid: 50
+      - vid: 60
+      - vid: 90
+      - vid: 101
+  - device:
+      name: FSW-01
+    name: "1/3"
+    mode: access
+    untagged_vlan:
+      vid: 40
+  - device:
+      name: FSW-01
+    name: "1/4"
+    mode: access
+    untagged_vlan:
+      vid: 60
+  - device:
+      name: FSW-01
+    name: "1/5"
+    mode: access
+    untagged_vlan:
+      vid: 50
+  - device:
+      name: FSW-01
+    name: "1/6"
+    mode: access
+    untagged_vlan:
+      vid: 50
+  - device:
+      name: FSW-01
+    name: "1/7"
+    mode: access
+    untagged_vlan:
+      vid: 50
+  - device:
+      name: FSW-01
+    name: "1/8"
+    mode: access
+    untagged_vlan:
+      vid: 50
+  - device:
+      name: FSW-01
+    name: "1/10"
+    mode: access
+    untagged_vlan:
+      vid: 90
+  - device:
+      name: FSW-01
+    name: "Management"
+    mode: access
+    untagged_vlan:
+      vid: 90
 
+# Device updates (set primary IP after IP is assigned)
+device_updates:
+  - name: FSW-01
+    primary_ip4:
+      address: 10.1.1.1/32
