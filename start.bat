@@ -10,7 +10,7 @@ echo This may take a minute on first startup...
 
 :wait_loop
 timeout /t 5 /nobreak > nul
-docker compose exec -T netbox curl -sf http://localhost:8080/api/ > nul 2>&1
+curl -sf http://localhost:8000/login/ > nul 2>&1
 if errorlevel 1 (
     echo   Still waiting...
     goto wait_loop

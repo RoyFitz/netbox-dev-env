@@ -18,11 +18,11 @@ services:
     ports:
       - "8000:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/login/"]
       interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 90s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
 
   netbox-worker:
     image: netboxcommunity/netbox:latest

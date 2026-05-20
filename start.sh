@@ -11,7 +11,7 @@ echo "Waiting for NetBox to be ready..."
 echo "This may take a minute on first startup..."
 
 # Wait for NetBox to be healthy
-until docker compose exec -T netbox curl -sf http://localhost:8080/api/ > /dev/null 2>&1; do
+until curl -sf http://localhost:8000/login/ > /dev/null 2>&1; do
     sleep 5
     echo "  Still waiting..."
 done
