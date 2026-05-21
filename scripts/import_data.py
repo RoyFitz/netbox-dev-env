@@ -23,7 +23,7 @@ from typing import Any
 
 # Configuration
 NETBOX_URL = os.getenv('NETBOX_URL', 'http://localhost:8080')
-API_TOKEN = os.getenv('API_TOKEN', '0123456789abcdef0123456789abcdef01234567')
+API_TOKEN = os.getenv('API_TOKEN', 'jXyZLRyOTBm6QxuxlOO8Yv3U6ZGtMMB5DtEF9pom')
 DATA_DIR = Path(os.getenv('DATA_DIR', '/data'))
 
 # API endpoint mappings for common NetBox object types

@@ -1,6 +1,6 @@
 services:
   netbox:
-    image: netboxcommunity/netbox:latest
+    image: netboxcommunity/netbox:v4.5.8
     depends_on:
       postgres:
         condition: service_healthy
@@ -25,7 +25,7 @@ services:
       start_period: 300s
 
   netbox-worker:
-    image: netboxcommunity/netbox:latest
+    image: netboxcommunity/netbox:v4.5.8
     depends_on:
       netbox:
         condition: service_healthy
@@ -37,7 +37,7 @@ services:
       - netbox-scripts:/opt/netbox/netbox/scripts
 
   netbox-housekeeping:
-    image: netboxcommunity/netbox:latest
+    image: netboxcommunity/netbox:v4.5.8
     depends_on:
       netbox:
         condition: service_healthy
