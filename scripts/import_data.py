@@ -23,8 +23,19 @@ from typing import Any
 
 # Configuration
 NETBOX_URL = os.getenv('NETBOX_URL', 'http://localhost:8080')
-API_TOKEN = os.getenv('API_TOKEN', 'jXyZLRyOTBm6QxuxlOO8Yv3U6ZGtMMB5DtEF9pom')
+API_TOKEN = os.getenv('API_TOKEN', '0123456789abcdef0123456789abcdef01234567')
 DATA_DIR = Path(os.getenv('DATA_DIR', '/data'))
+
+def get_auth_header(token: str) -> dict:
+    """Return appropriate Authorization header based on token format.
+
+    v2 tokens start with 'nbt_' and use Bearer auth.
+    v1 tokens use Token auth (deprecated in NetBox 4.6+).
+    """
+    if token.startswith('nbt_'):
+        return {'Authorization': f'Bearer {token}'}
+    else:
+        return {'Authorization': f'Token {token}'}
 
 # API endpoint mappings for common NetBox object types
 ENDPOINT_MAP = {
@@ -118,7 +129,7 @@ class NetBoxImporter:
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
         self.session.headers.update({
-            'Authorization': f'Token {token}',
+            **get_auth_header(token),
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         })
