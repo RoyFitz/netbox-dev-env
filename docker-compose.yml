@@ -12,6 +12,7 @@ services:
     volumes:
       - ./data:/data
       - ./scripts:/scripts
+      - ./config/extra.py:/etc/netbox/config/extra.py:ro
       - netbox-media:/opt/netbox/netbox/media
       - netbox-reports:/opt/netbox/netbox/reports
       - netbox-scripts:/opt/netbox/netbox/scripts
@@ -32,6 +33,7 @@ services:
     command: /opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py rqworker
     env_file: env/netbox.env
     volumes:
+      - ./config/extra.py:/etc/netbox/config/extra.py:ro
       - netbox-media:/opt/netbox/netbox/media
       - netbox-reports:/opt/netbox/netbox/reports
       - netbox-scripts:/opt/netbox/netbox/scripts
